@@ -1,0 +1,136 @@
+﻿@page "/Population"
+
+@namespace DyslexicDecode.Services
+@inject PopulationService PopulationService
+@inject IJSRuntime JSRuntime
+
+<div class="container">
+    <h3>Population</h3>
+
+    <div>
+        <h3>Select a Country:</h3>
+        <select @bind="selectedCountry" @oninput="UpdateSelectedCountry">
+            @foreach (var country in countries)
+            {
+                <option value="@country">@country</option>
+            }
+        </select>
+
+        <button @onclick="CalculatePopulation">Calculate Population</button>
+
+        @if (!string.IsNullOrEmpty(displayedPopulation2))
+        {
+            <p>The range is roughly @($"{displayedPopulation1} - {displayedPopulation2}") individuals with dyslexia in @selectedCountry</p>
+        }
+    </div>
+</div>
+
+<script>
+    function updateDisplayedRange(range) {
+        const displayElement = document.getElementById('populationDisplay');
+        displayElement.textContent = range;
+    }
+</script>
+
+@code {
+    private DateTime selectedDate = DateTime.Now;
+    private List<string> countries = new List<string>
+{
+    "United States",
+    "China",
+    "India",
+    "Indonesia",
+    "Pakistan",
+    "Brazil",
+    "Nigeria",
+    "Bangladesh",
+    "Russia",
+    "Mexico",
+    "Japan",
+    "Philippines",
+    "Ethiopia",
+    "Vietnam",
+    "Egypt",
+    "DR Congo",
+    "Germany",
+    "Iran",
+    "Turkey",
+    "Thailand",
+    "United Kingdom",
+    "Ireland",
+    "France",
+    "Italy",
+    "South Africa",
+    "Myanmar",
+    "South Korea",
+    "Colombia",
+    "Spain",
+    "Ukraine",
+    "Tanzania"
+};
+
+    private PopulationResult populationResult;
+    private string displayedPopulation1 = "";
+    private string displayedPopulation2 = "";
+    private string selectedCountry = "";
+
+    private void UpdateSelectedCountry(ChangeEventArgs e)
+    {
+        selectedCountry = e.Value?.ToString();
+        ResetDisplayedPopulation();
+    }
+
+    private void ResetDisplayedPopulation()
+    {
+        populationResult = null;
+    }
+
+    private async Task CalculatePopulation()
+    {
+        try
+        {
+            populationResult = await PopulationService.GetPopulationPercentage(selectedCountry);
+
+            if (populationResult != null)
+            {
+                await AnimateCounter((int)populationResult.NinePercent, (int)populationResult.TwelvePercent); 
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+     private async Task AnimateCounter(int targetCount1, int targetCount2)
+    {
+        const int incrementValue1 = 49804;
+        const int incrementValue2 = 53804; 
+        int currentCount1 = 0;
+        int currentCount2 = 0;
+
+        while (currentCount1 <= targetCount1 || currentCount2 <= targetCount2)
+        {
+            if (currentCount1 <= targetCount1)
+            {
+                displayedPopulation1 = currentCount1.ToString("N0");
+                currentCount1 += incrementValue1;
+            }
+
+            if (currentCount2 <= targetCount2)
+            {
+                displayedPopulation2 = currentCount2.ToString("N0");
+                currentCount2 += incrementValue2;
+            }
+
+            await Task.Delay(10); 
+            StateHasChanged(); 
+        }
+
+        // Ensure the final counts match the target counts exactly
+        displayedPopulation1 = targetCount1.ToString("N0");
+        displayedPopulation2 = targetCount2.ToString("N0");
+        StateHasChanged(); 
+    }
+
+}
